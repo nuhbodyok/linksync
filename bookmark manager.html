@@ -1,0 +1,430 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bookmark Manager</title>
+    <link rel="icon" href="https://www.google.com/favicon.ico" type="image/x-icon">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #2c2f36;
+            color: #ccc;
+            line-height: 1.6; /* Improved readability */
+        }
+
+        h1 {
+            text-align: center;
+            margin-bottom: 20px;
+            color: #f7f7f7;
+        }
+
+        #fileInput,
+        #searchInput,
+        .controls button,
+        .controls select {
+            padding: 8px;
+            font-size: 14px;
+            border-radius: 4px;
+            border: 1px solid #555;
+            width: 100%; /* Full width on mobile */
+            box-sizing: border-box; /* Include padding in width */
+            margin-bottom: 5px; /* Spacing for stacked elements */
+        }
+
+        #fileInput {
+            display: block;
+            margin: 0 auto 20px;
+            color: #333;
+        }
+
+        .controls {
+            margin-bottom: 20px;
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .controls>* {
+            /* Select all direct children of .controls */
+            margin: 5px; /* Spacing for controls */
+            width: 100%; /* Make controls full width on mobile */
+            box-sizing: border-box; /* Include padding and border in width */
+        }
+
+        .controls button,
+        .controls select {
+            cursor: pointer;
+        }
+
+        .controls button:hover,
+        .controls select:hover {
+            background-color: #007bff;
+            color: white;
+        }
+
+        #bookmarkList {
+            list-style-type: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        .bookmark-item {
+            display: flex;
+            flex-direction: column;
+            /* Stack elements vertically */
+            align-items: flex-start;
+            /* Align items to the start */
+            background-color: #444;
+            margin: 5px 0;
+            padding: 8px 10px;
+            border-radius: 4px;
+            color: #ccc;
+            border-left: 3px solid #007bff;
+            transition: background-color 0.2s ease;
+        }
+
+        .bookmark-item:hover {
+            background-color: #555;
+            /* Hover effect */
+        }
+
+        .bookmark-item a {
+            text-decoration: none;
+            color: #007bff;
+            font-weight: bold;
+            display: block;
+            /* Full width on mobile */
+            width: 100%;
+            box-sizing: border-box;
+            margin-bottom: 5px;
+            /* Space before the URL */
+        }
+
+        .bookmark-item .url {
+            font-size: 12px;
+            color: #aaa;
+            margin-top: 3px;
+            width: 100%; /* Ensure full width */
+            box-sizing: border-box; /* Include padding and border in width */
+        }
+
+        .bookmark-item button {
+            background-color: #f44336;
+            color: white;
+            padding: 4px 8px;
+            font-size: 12px;
+            cursor: pointer;
+            margin-left: 0;
+            margin-top: 5px;
+        }
+
+        .bookmark-item button:hover {
+            background-color: #d32f2f;
+        }
+
+        .expand {
+            cursor: pointer;
+            color: #ccc;
+        }
+
+        .checkbox {
+            margin-right: 10px;
+        }
+
+        .bookmark-item.selected {
+            background-color: #666;
+            /* Visual feedback for selected bookmarks */
+        }
+
+        .date-added {
+            font-size: 10px;
+            color: #888;
+            margin-left: 0;
+            margin-top: 5px;
+        }
+
+        .edit-input {
+            padding: 4px;
+            border: 1px solid #777;
+            border-radius: 4px;
+            background-color: #555;
+            color: #ccc;
+            margin-right: 0;
+            width: 100%; /* Make input full width on mobile */
+            box-sizing: border-box;
+            margin-bottom: 5px;
+        }
+
+        /* Media query for larger screens (e.g., tablets and desktops) */
+        @media (min-width: 768px) {
+            .controls {
+                flex-direction: row;
+                /* Display controls in a row */
+                justify-content: center;
+                /* Center the items */
+                align-items: center;
+                text-align: left;
+                /* Correctly align text */
+            }
+
+            .controls>* {
+                width: auto;
+                /* Allow controls to take their natural width */
+                margin: 0 5px;
+                /* Reduce margin on larger screens */
+            }
+
+            #searchInput {
+                width: 40%;
+                /* Set a specific width for the search input */
+            }
+
+            .bookmark-item {
+                flex-direction: row;
+                align-items: center;
+            }
+
+            .bookmark-item a {
+                width: auto;
+                margin-bottom: 0;
+            }
+
+            .bookmark-item .url {
+                width: auto;
+            }
+
+            .bookmark-item button {
+                margin-left: auto;
+                margin-top: 0;
+            }
+
+            .date-added {
+                margin-left: 10px;
+                margin-top: 0;
+            }
+
+            .edit-input {
+                width: auto;
+                margin-bottom: 0;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <h1>Bookmark Manager</h1>
+
+    <input type="file" id="fileInput" accept=".html" />
+
+    <div class="controls">
+        <input type="text" id="searchInput" placeholder="Search bookmarks..." oninput="searchBookmarks()">
+        <button onclick="removeDuplicates()">Remove Duplicates</button>
+        <select id="sortDropdown" onchange="sortBookmarks()">
+            <option value="alphabetical">Sort Alphabetically</option>
+            <option value="numerical">Sort Numerically</option>
+            <option value="date">Sort by Date</option>
+        </select>
+        <button onclick="clearBookmarks()">Clear All</button>
+        <button onclick="exportToCSV()">Export to CSV</button>
+        <button onclick="copySelectedLinks()">Copy Selected Links</button>
+    </div>
+
+    <div>
+        <input type="checkbox" id="selectAll" onchange="toggleSelectAll()"> Select All
+    </div>
+
+    <ul id="bookmarkList"></ul>
+
+    <script>
+        let bookmarks = [];
+        let filteredBookmarks = []; // Added for search functionality
+
+        // Load bookmarks from localStorage on page load
+        window.onload = function() {
+            loadBookmarks();
+        };
+
+        function loadBookmarks() {
+            const storedBookmarks = localStorage.getItem('bookmarks');
+            bookmarks = storedBookmarks ? JSON.parse(storedBookmarks) : [];
+            filteredBookmarks = [...bookmarks]; // Initialize filteredBookmarks with all bookmarks
+            displayBookmarks();
+        }
+
+        function saveBookmarks() {
+            localStorage.setItem('bookmarks', JSON.stringify(bookmarks));
+        }
+
+        document.getElementById("fileInput").addEventListener("change", (e) => {
+            const reader = new FileReader();
+            reader.onload = (e) => parseBookmarks(e.target.result);
+            reader.onerror = function() {
+                alert('Failed to read file');
+            };
+            reader.readAsText(e.target.files[0]);
+        });
+
+        function parseBookmarks(contents) {
+            try {
+                const doc = new DOMParser().parseFromString(contents, "text/html");
+                const links = doc.querySelectorAll("a"); // Directly select all 'a' elements
+                links.forEach(link => {
+                    if (link.href && link.textContent.trim() !== "" && !bookmarks.some(b => b.url === link.href)) {
+                        bookmarks.push({
+                            title: link.textContent,
+                            url: link.href,
+                            date: new Date().toISOString()
+                        });
+                    }
+                });
+                filteredBookmarks = [...bookmarks]; // Reset filtered bookmarks after parsing
+                displayBookmarks();
+                saveBookmarks(); // Save after loading
+            } catch (error) {
+                alert("Error parsing HTML file: " + error);
+            }
+        }
+
+        function displayBookmarks(bookmarksToDisplay = filteredBookmarks) {
+            const list = document.getElementById("bookmarkList");
+            list.innerHTML = bookmarksToDisplay.map((bookmark, index) => `
+                <li class="bookmark-item" data-index="${index}">
+                    <input type="checkbox" class="checkbox" onchange="toggleSelect(event)">
+                    <a href="${bookmark.url}" target="_blank">${bookmark.title.length > 30 ? bookmark.title.slice(0, 30) + ' <span class="expand" onclick="expandTitle(${index})">...</span>' : bookmark.title}</a>
+                    <div class="url">
+                        <input type="text" class="edit-input" value="${bookmark.url}" onchange="updateUrl(event, ${index})">
+                    </div>
+                    <span class="date-added">Added: ${new Date(bookmark.date).toLocaleDateString()}</span>
+                    <button onclick="renameBookmark(${index})">Rename</button>
+                    <button onclick="removeBookmark(${index})">Remove</button>
+                </li>
+            `).join("");
+        }
+
+
+        function expandTitle(index) {
+            const bookmarkItem = document.querySelectorAll('.bookmark-item')[index];
+            const link = bookmarkItem.querySelector('a');
+            link.innerHTML = bookmarks[index].title;
+        }
+
+        function renameBookmark(index) {
+            const newTitle = prompt("Enter new title:", bookmarks[index].title);
+            if (newTitle !== null && newTitle.trim() !== "") {
+                bookmarks[index].title = newTitle.trim();
+                saveBookmarks(); // Save after renaming
+                searchBookmarks(); // Refresh the list
+            }
+        }
+
+        function updateUrl(event, index) {
+            bookmarks[index].url = event.target.value;
+            saveBookmarks();
+            searchBookmarks(); // Refresh the list
+        }
+
+        function removeBookmark(index) {
+            bookmarks.splice(index, 1);
+            saveBookmarks(); // Save after removing
+            searchBookmarks(); // Refresh the list
+        }
+
+        function removeDuplicates() {
+            bookmarks = [...new Map(bookmarks.map(b => [b.url, b])).values()];
+            saveBookmarks(); // Save after removing duplicates
+            searchBookmarks(); // Refresh the list
+        }
+
+        function sortBookmarks() {
+            const sortType = document.getElementById("sortDropdown").value;
+            switch (sortType) {
+                case "alphabetical":
+                    bookmarks.sort((a, b) => a.title.localeCompare(b.title));
+                    break;
+                case "numerical":
+                    bookmarks.sort((a, b) => {
+                        const numA = parseInt(a.title.match(/\d+/) || 0);
+                        const numB = parseInt(b.title.match(/\d+/) || 0);
+                        return numA - numB;
+                    });
+                    break;
+                case "date":
+                    bookmarks.sort((a, b) => new Date(b.date) - new Date(a.date));
+                    break;
+            }
+            saveBookmarks(); // Save after sorting
+            searchBookmarks(); // Refresh the list
+        }
+
+        function clearBookmarks() {
+            if (confirm("Are you sure you want to clear all bookmarks?")) {
+                bookmarks = [];
+                saveBookmarks(); // Save after clearing
+                searchBookmarks(); // Refresh the list
+            }
+        }
+
+        function searchBookmarks() {
+            const query = document.getElementById("searchInput").value.toLowerCase();
+            filteredBookmarks = bookmarks.filter(b => b.title.toLowerCase().includes(query) || b.url.toLowerCase().includes(query));
+            displayBookmarks(); // Display the filtered bookmarks
+        }
+
+        function exportToCSV() {
+            const csvContent = "Title,URL\n" + bookmarks.map(b => `"${b.title}","${b.url}"`).join("\n");
+            const blob = new Blob([csvContent], {
+                type: 'text/csv'
+            });
+            const link = document.createElement("a");
+            link.href = URL.createObjectURL(blob);
+            link.download = "bookmarks.csv";
+            link.click();
+        }
+
+        function toggleSelectAll() {
+            const selectAllCheckbox = document.getElementById("selectAll");
+            const checkboxes = document.querySelectorAll('.checkbox');
+            checkboxes.forEach(checkbox => {
+                checkbox.checked = selectAllCheckbox.checked;
+                const listItem = checkbox.closest('.bookmark-item');
+                if (selectAllCheckbox.checked) {
+                    listItem.classList.add('selected');
+                } else {
+                    listItem.classList.remove('selected');
+                }
+            });
+        }
+
+        function toggleSelect(event) {
+            const listItem = event.target.closest('.bookmark-item');
+            listItem.classList.toggle('selected', event.target.checked);
+        }
+
+        function copySelectedLinks() {
+            const selectedLinks = Array.from(document.querySelectorAll('.bookmark-item.selected'))
+                .map(item => {
+                    const link = item.querySelector('a');
+                    return link ? link.href : null;
+                })
+                .filter(link => link !== null)
+                .join('\n');
+
+            if (selectedLinks) {
+                navigator.clipboard.writeText(selectedLinks).then(() => {
+                    alert("Selected links copied to clipboard!");
+                });
+            } else {
+                alert("No links selected!");
+            }
+        }
+    </script>
+
+</body>
+
+</html>
